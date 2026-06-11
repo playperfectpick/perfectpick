@@ -244,7 +244,7 @@
     <p><b>1.</b> Every matchday, pick <b>one team</b> you think will win in 90 minutes.</p>
     <p><b>2.</b> Win and your streak grows. <b>A draw or a defeat is a red card</b> — run over, start again.</p>
     <p><b>3.</b> Each of the 48 nations can be used <b>once per run</b>. Burn France in the group stage and she's gone for your knockouts.</p>
-    <p><b>4.</b> Picks lock at the day's first kickoff. Results settle overnight.</p>
+    <p><b>4.</b> Each match locks at kickoff — no switching once the whistle goes. Results settle overnight.</p>
   </div>
 
   <footer>PERFECT PICK · Unofficial fan game · Not affiliated with FIFA or Panini</footer>
@@ -302,50 +302,51 @@ const TEAMS = {
 };
 
 /* Verified group-stage fixtures (kick-off times ET). More days added as the tournament runs. */
+/* lock = ET time of the day's first kickoff; picks for that day close then */
 const FIXTURES = [
-  {date:"2026-06-11", label:"Thu 11 June", matches:[
-    {id:"MEX-RSA", h:"MEX", a:"RSA", g:"A", t:"3pm ET"},
-    {id:"KOR-CZE", h:"KOR", a:"CZE", g:"A", t:"10pm ET"}
+  {date:"2026-06-11", label:"Thu 11 June", lock:"15:00", matches:[
+    {id:"MEX-RSA", k:"2026-06-11T19:00:00Z", h:"MEX", a:"RSA", g:"A", t:"3pm ET"},
+    {id:"KOR-CZE", k:"2026-06-12T02:00:00Z", h:"KOR", a:"CZE", g:"A", t:"10pm ET"}
   ]},
-  {date:"2026-06-12", label:"Fri 12 June", matches:[
-    {id:"CAN-BIH", h:"CAN", a:"BIH", g:"B", t:"3pm ET"},
-    {id:"USA-PAR", h:"USA", a:"PAR", g:"D", t:"9pm ET"}
+  {date:"2026-06-12", lock:"15:00", label:"Fri 12 June", matches:[
+    {id:"CAN-BIH", k:"2026-06-12T19:00:00Z", h:"CAN", a:"BIH", g:"B", t:"3pm ET"},
+    {id:"USA-PAR", k:"2026-06-13T01:00:00Z", h:"USA", a:"PAR", g:"D", t:"9pm ET"}
   ]},
-  {date:"2026-06-13", label:"Sat 13 June", matches:[
-    {id:"QAT-SUI", h:"QAT", a:"SUI", g:"B", t:"3pm ET"},
-    {id:"BRA-MAR", h:"BRA", a:"MAR", g:"C", t:"6pm ET"},
-    {id:"HAI-SCO", h:"HAI", a:"SCO", g:"C", t:"9pm ET"},
-    {id:"AUS-TUR", h:"AUS", a:"TUR", g:"D", t:"12am ET"}
+  {date:"2026-06-13", lock:"15:00", label:"Sat 13 June", matches:[
+    {id:"QAT-SUI", k:"2026-06-13T19:00:00Z", h:"QAT", a:"SUI", g:"B", t:"3pm ET"},
+    {id:"BRA-MAR", k:"2026-06-13T22:00:00Z", h:"BRA", a:"MAR", g:"C", t:"6pm ET"},
+    {id:"HAI-SCO", k:"2026-06-14T01:00:00Z", h:"HAI", a:"SCO", g:"C", t:"9pm ET"},
+    {id:"AUS-TUR", k:"2026-06-14T04:00:00Z", h:"AUS", a:"TUR", g:"D", t:"12am ET"}
   ]},
-  {date:"2026-06-14", label:"Sun 14 June", matches:[
-    {id:"GER-CUW", h:"GER", a:"CUW", g:"E", t:"1pm ET"},
-    {id:"NED-JPN", h:"NED", a:"JPN", g:"F", t:"4pm ET"},
-    {id:"CIV-ECU", h:"CIV", a:"ECU", g:"E", t:"7pm ET"},
-    {id:"SWE-TUN", h:"SWE", a:"TUN", g:"F", t:"10pm ET"}
+  {date:"2026-06-14", lock:"13:00", label:"Sun 14 June", matches:[
+    {id:"GER-CUW", k:"2026-06-14T17:00:00Z", h:"GER", a:"CUW", g:"E", t:"1pm ET"},
+    {id:"NED-JPN", k:"2026-06-14T20:00:00Z", h:"NED", a:"JPN", g:"F", t:"4pm ET"},
+    {id:"CIV-ECU", k:"2026-06-14T23:00:00Z", h:"CIV", a:"ECU", g:"E", t:"7pm ET"},
+    {id:"SWE-TUN", k:"2026-06-15T02:00:00Z", h:"SWE", a:"TUN", g:"F", t:"10pm ET"}
   ]},
-  {date:"2026-06-15", label:"Mon 15 June", matches:[
-    {id:"ESP-CPV", h:"ESP", a:"CPV", g:"H", t:"12pm ET"},
-    {id:"BEL-EGY", h:"BEL", a:"EGY", g:"G", t:"3pm ET"},
-    {id:"KSA-URU", h:"KSA", a:"URU", g:"H", t:"6pm ET"},
-    {id:"IRN-NZL", h:"IRN", a:"NZL", g:"G", t:"9pm ET"}
+  {date:"2026-06-15", lock:"12:00", label:"Mon 15 June", matches:[
+    {id:"ESP-CPV", k:"2026-06-15T16:00:00Z", h:"ESP", a:"CPV", g:"H", t:"12pm ET"},
+    {id:"BEL-EGY", k:"2026-06-15T19:00:00Z", h:"BEL", a:"EGY", g:"G", t:"3pm ET"},
+    {id:"KSA-URU", k:"2026-06-15T22:00:00Z", h:"KSA", a:"URU", g:"H", t:"6pm ET"},
+    {id:"IRN-NZL", k:"2026-06-16T01:00:00Z", h:"IRN", a:"NZL", g:"G", t:"9pm ET"}
   ]},
-  {date:"2026-06-16", label:"Tue 16 June", matches:[
-    {id:"FRA-SEN", h:"FRA", a:"SEN", g:"I", t:"3pm ET"},
-    {id:"IRQ-NOR", h:"IRQ", a:"NOR", g:"I", t:"6pm ET"},
-    {id:"ARG-ALG", h:"ARG", a:"ALG", g:"J", t:"9pm ET"},
-    {id:"AUT-JOR", h:"AUT", a:"JOR", g:"J", t:"12am ET"}
+  {date:"2026-06-16", lock:"15:00", label:"Tue 16 June", matches:[
+    {id:"FRA-SEN", k:"2026-06-16T19:00:00Z", h:"FRA", a:"SEN", g:"I", t:"3pm ET"},
+    {id:"IRQ-NOR", k:"2026-06-16T22:00:00Z", h:"IRQ", a:"NOR", g:"I", t:"6pm ET"},
+    {id:"ARG-ALG", k:"2026-06-17T01:00:00Z", h:"ARG", a:"ALG", g:"J", t:"9pm ET"},
+    {id:"AUT-JOR", k:"2026-06-17T04:00:00Z", h:"AUT", a:"JOR", g:"J", t:"12am ET"}
   ]},
-  {date:"2026-06-17", label:"Wed 17 June", matches:[
-    {id:"POR-COD", h:"POR", a:"COD", g:"K", t:"1pm ET"},
-    {id:"ENG-CRO", h:"ENG", a:"CRO", g:"L", t:"4pm ET"},
-    {id:"GHA-PAN", h:"GHA", a:"PAN", g:"L", t:"7pm ET"},
-    {id:"UZB-COL", h:"UZB", a:"COL", g:"K", t:"10pm ET"}
+  {date:"2026-06-17", lock:"13:00", label:"Wed 17 June", matches:[
+    {id:"POR-COD", k:"2026-06-17T17:00:00Z", h:"POR", a:"COD", g:"K", t:"1pm ET"},
+    {id:"ENG-CRO", k:"2026-06-17T20:00:00Z", h:"ENG", a:"CRO", g:"L", t:"4pm ET"},
+    {id:"GHA-PAN", k:"2026-06-17T23:00:00Z", h:"GHA", a:"PAN", g:"L", t:"7pm ET"},
+    {id:"UZB-COL", k:"2026-06-18T02:00:00Z", h:"UZB", a:"COL", g:"K", t:"10pm ET"}
   ]},
-  {date:"2026-06-18", label:"Thu 18 June", matches:[
-    {id:"CZE-RSA", h:"CZE", a:"RSA", g:"A", t:"12pm ET"},
-    {id:"SUI-BIH", h:"SUI", a:"BIH", g:"B", t:"3pm ET"},
-    {id:"CAN-QAT", h:"CAN", a:"QAT", g:"B", t:"6pm ET"},
-    {id:"MEX-KOR", h:"MEX", a:"KOR", g:"A", t:"9pm ET"}
+  {date:"2026-06-18", lock:"12:00", label:"Thu 18 June", matches:[
+    {id:"CZE-RSA", k:"2026-06-18T16:00:00Z", h:"CZE", a:"RSA", g:"A", t:"12pm ET"},
+    {id:"SUI-BIH", k:"2026-06-18T19:00:00Z", h:"SUI", a:"BIH", g:"B", t:"3pm ET"},
+    {id:"CAN-QAT", k:"2026-06-18T22:00:00Z", h:"CAN", a:"QAT", g:"B", t:"6pm ET"},
+    {id:"MEX-KOR", k:"2026-06-19T01:00:00Z", h:"MEX", a:"KOR", g:"A", t:"9pm ET"}
   ]}
 ];
 
@@ -377,7 +378,31 @@ function todayET(){
   return new Intl.DateTimeFormat("en-CA",{timeZone:"America/New_York"}).format(new Date());
 }
 
+function nowET(){
+  const parts = new Intl.DateTimeFormat("en-CA",{timeZone:"America/New_York",hour12:false,
+    year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})
+    .formatToParts(new Date());
+  const g = t => parts.find(p=>p.type===t).value;
+  return { date: `${g("year")}-${g("month")}-${g("day")}`, time: `${g("hour")}:${g("minute")}` };
+}
+
+/* A day is closed for picks once results exist, the day has passed,
+   or the day's first match has kicked off (its lock time). */
+function dayLocked(day){
+  if(dayHasResults(day)) return true;
+  const now = nowET();
+  if(now.date > day.date) return true;
+  if(now.date === day.date && day.lock && now.time >= day.lock) return true;
+  return false;
+}
+
 function resultFor(matchId){ return RESULTS[matchId] || null }
+
+function matchLocked(m){
+  if(resultFor(m.id)) return true;
+  if(m.k && Date.now() >= Date.parse(m.k)) return true;
+  return false;
+}
 
 function dayHasResults(day){
   return day.matches.some(m => resultFor(m.id));
@@ -458,24 +483,25 @@ function renderDay(ev){
   const day = FIXTURES.find(d=>d.date===selectedDay);
   if(!day) return;
   const today = todayET();
-  const locked = S.dead || dayHasResults(day) || day.date < today;
+  const locked = S.dead || dayLocked(day);
   const myPick = S.picks[day.date];
   const used = usedTeams();
 
   document.getElementById("day-title").textContent = day.label;
   document.getElementById("day-sub").textContent =
-    locked ? (dayHasResults(day) ? "Results in" : (S.dead ? "Run over" : "Closed"))
-           : (myPick ? "Pick locked — tap another to change" : "Pick one winner");
+    locked ? (dayHasResults(day) ? "Results in" : (S.dead ? "Run over" : "Locked — kicked off"))
+           : (myPick ? `Pick locked in — changeable until ${day.lock||"kickoff"} ET` : "Pick one winner");
 
   const box = document.getElementById("matches");
   box.innerHTML = day.matches.map(m=>{
     const res = resultFor(m.id);
+    const mLocked = locked || matchLocked(m);
     return `<div class="match">
-      <div class="meta"><span>Group ${m.g}</span><span>${m.t}</span></div>
+      <div class="meta"><span>Group ${m.g}</span><span>${mLocked && !res ? "🔒 " : ""}${m.t}</span></div>
       <div class="teams">
-        ${teamBtn(m, m.h, {locked, myPick, used, res, day})}
+        ${teamBtn(m, m.h, {locked: mLocked, myPick, used, res, day})}
         <span class="vs">VS</span>
-        ${teamBtn(m, m.a, {locked, myPick, used, res, day})}
+        ${teamBtn(m, m.a, {locked: mLocked, myPick, used, res, day})}
       </div>
     </div>`;
   }).join("");
@@ -503,6 +529,9 @@ function teamBtn(m, code, ctx){
 
 function tapTeam(date, code){
   if(S.dead) return;
+  const day = FIXTURES.find(d=>d.date===date);
+  const m = day && day.matches.find(x=>x.h===code||x.a===code);
+  if(m && matchLocked(m)) return;
   pendingPick = (pendingPick === code) ? null : code;
   render();
 }
@@ -510,7 +539,7 @@ function tapTeam(date, code){
 function renderBars(ev){
   const day = FIXTURES.find(d=>d.date===selectedDay);
   const today = todayET();
-  const canPick = day && !S.dead && !dayHasResults(day) && day.date >= today;
+  const canPick = day && !S.dead && !dayLocked(day);
   const bar = document.getElementById("pickbar");
   const sharebar = document.getElementById("sharebar");
   if(pendingPick && canPick){
@@ -527,6 +556,9 @@ function renderBars(ev){
 
 function confirmPick(){
   if(!pendingPick) return;
+  const day = FIXTURES.find(d=>d.date===selectedDay);
+  const m = day && day.matches.find(x=>x.h===pendingPick||x.a===pendingPick);
+  if(!m || matchLocked(m)){ pendingPick=null; render(); toast("Too late — that match has kicked off 🔒"); return; }
   S.picks[selectedDay] = pendingPick;
   pendingPick = null;
   save(); render();
