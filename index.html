@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perfect Pick — World Cup Survivor</title>
+<meta name="description" content="Pick one team to win every matchday of the 2026 World Cup. Each nation can only be used once. One draw or defeat and you're out. How long can you survive?">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night:#07150E;
+    --turf:#0D2B1C;
+    --turf-2:#10331F;
+    --line:#1E4A30;
+    --chalk:#F4F8F2;
+    --chalk-dim:#9DB8A6;
+    --gold:#E9B949;
+    --red:#E04646;
+    --mint:#4CC38A;
+    --radius:14px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--night);
+    color:var(--chalk);
+    font-family:'Archivo',system-ui,sans-serif;
+    min-height:100vh;
+    background-image:
+      radial-gradient(ellipse 120% 60% at 50% -10%, rgba(76,195,138,.10), transparent 60%),
+      repeating-linear-gradient(90deg, transparent 0 119px, rgba(244,248,242,.018) 119px 120px);
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:20px 16px 120px}
+
+  /* ---------- header ---------- */
+  header{text-align:center;padding:18px 0 6px}
+  .eyebrow{
+    font-size:11px;letter-spacing:.28em;color:var(--gold);
+    text-transform:uppercase;font-weight:600;
+  }
+  h1{
+    font-family:'Anton',sans-serif;
+    font-size:clamp(44px,12vw,60px);
+    line-height:.95;letter-spacing:.01em;
+    text-transform:uppercase;
+    margin:6px 0 4px;
+  }
+  h1 .accent{color:var(--gold)}
+  .tagline{color:var(--chalk-dim);font-size:13.5px;max-width:340px;margin:4px auto 0}
+
+  /* ---------- scoreboard ---------- */
+  .scoreboard{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+    margin:22px 0 10px;
+  }
+  .panel{
+    background:linear-gradient(180deg,var(--turf-2),var(--turf));
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px 8px 12px;text-align:center;
+    box-shadow:0 4px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(244,248,242,.05);
+  }
+  .panel .num{
+    font-family:'Anton',sans-serif;font-size:34px;line-height:1;
+    font-variant-numeric:tabular-nums;
+  }
+  .panel .num.gold{color:var(--gold)}
+  .panel .num.red{color:var(--red)}
+  .panel .lbl{
+    font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--chalk-dim);margin-top:7px;font-weight:600;
+  }
+  .status-live{color:var(--mint)}
+
+  /* ---------- burned teams ---------- */
+  .burned{
+    background:var(--turf);border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px 14px;margin-bottom:22px;
+  }
+  .burned .lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--chalk-dim);font-weight:600;margin-bottom:8px}
+  .burned .flags{font-size:22px;letter-spacing:6px;line-height:1.5;word-break:break-all}
+  .burned .empty{color:var(--chalk-dim);font-size:13px;font-style:italic}
+
+  /* ---------- day nav ---------- */
+  .daynav{
+    display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;
+    scrollbar-width:none;
+  }
+  .daynav::-webkit-scrollbar{display:none}
+  .daybtn{
+    flex:0 0 auto;background:transparent;border:1px solid var(--line);
+    color:var(--chalk-dim);border-radius:999px;padding:8px 15px;
+    font-family:'Archivo';font-size:12.5px;font-weight:600;cursor:pointer;
+    transition:all .15s;
+  }
+  .daybtn.active{background:var(--chalk);color:var(--night);border-color:var(--chalk)}
+  .daybtn.done{opacity:.45}
+  .daybtn .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:6px;vertical-align:1px}
+  .dot.win{background:var(--mint)} .dot.loss{background:var(--red)} .dot.pick{background:var(--gold)}
+
+  /* ---------- matchday ---------- */
+  .dayhead{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 12px}
+  .dayhead h2{font-family:'Anton',sans-serif;font-size:21px;text-transform:uppercase;letter-spacing:.03em}
+  .dayhead .sub{font-size:11.5px;color:var(--chalk-dim);font-weight:500}
+
+  .match{
+    background:var(--turf);border:1px solid var(--line);border-radius:var(--radius);
+    margin-bottom:10px;overflow:hidden;
+  }
+  .match .meta{
+    display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--chalk-dim);
+    padding:9px 14px 0;
+  }
+  .teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;padding:8px 8px 10px;gap:4px}
+  .team{
+    background:transparent;border:1.5px solid transparent;border-radius:10px;
+    color:var(--chalk);font-family:'Archivo';cursor:pointer;
+    padding:10px 4px;text-align:center;transition:all .12s;
+  }
+  .team .flag{font-size:30px;display:block;line-height:1.15}
+  .team .name{font-size:12.5px;font-weight:600;display:block;margin-top:4px}
+  .team:not(:disabled):hover{background:rgba(244,248,242,.05)}
+  .team.picked{border-color:var(--gold);background:rgba(233,185,73,.10)}
+  .team.picked .name{color:var(--gold)}
+  .team:disabled{opacity:.32;cursor:not-allowed}
+  .team.won{border-color:var(--mint);background:rgba(76,195,138,.08)}
+  .team.lostpick{border-color:var(--red);background:rgba(224,70,70,.08)}
+  .vs{
+    align-self:center;font-family:'Anton',sans-serif;font-size:13px;
+    color:var(--chalk-dim);padding:0 4px;
+  }
+  .usedtag{font-size:9px;letter-spacing:.1em;color:var(--red);display:block;margin-top:2px;font-weight:700}
+  .restag{font-size:9px;letter-spacing:.1em;display:block;margin-top:2px;font-weight:700;color:var(--chalk-dim)}
+
+  /* ---------- pick bar ---------- */
+  .pickbar{
+    position:fixed;left:0;right:0;bottom:0;z-index:50;
+    background:linear-gradient(0deg,var(--night) 65%,transparent);
+    padding:26px 16px 18px;display:none;
+  }
+  .pickbar.show{display:block}
+  .pickbar .inner{max-width:520px;margin:0 auto;display:flex;gap:10px}
+  .btn{
+    flex:1;border:none;border-radius:12px;padding:15px;cursor:pointer;
+    font-family:'Anton',sans-serif;font-size:16px;letter-spacing:.06em;text-transform:uppercase;
+    transition:transform .1s;
+  }
+  .btn:active{transform:scale(.98)}
+  .btn-gold{background:var(--gold);color:#1A1405}
+  .btn-ghost{background:var(--turf-2);color:var(--chalk);border:1px solid var(--line);flex:0 0 auto;padding:15px 18px}
+  .btn-share{background:var(--chalk);color:var(--night)}
+  .btn-red{background:var(--red);color:var(--chalk)}
+
+  /* ---------- rules ---------- */
+  .rules{
+    border-top:1px solid var(--line);margin-top:30px;padding-top:20px;
+    color:var(--chalk-dim);font-size:13.5px;line-height:1.65;
+  }
+  .rules h3{font-family:'Anton',sans-serif;color:var(--chalk);font-size:16px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+  .rules p{margin-bottom:8px}
+  .rules b{color:var(--chalk)}
+
+  /* ---------- overlays ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(4,12,8,.92);backdrop-filter:blur(6px);
+    z-index:100;display:none;align-items:center;justify-content:center;padding:24px;
+  }
+  .overlay.show{display:flex}
+  .ovcard{
+    background:var(--turf);border:1px solid var(--line);border-radius:18px;
+    max-width:380px;width:100%;padding:30px 24px;text-align:center;
+    animation:pop .35s cubic-bezier(.2,1.4,.4,1);
+  }
+  @keyframes pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+  .redcard{
+    width:74px;height:104px;border-radius:9px;margin:0 auto 18px;
+    background:linear-gradient(160deg,#F25C5C,#C02E2E);
+    box-shadow:0 10px 30px rgba(224,70,70,.4);
+    transform:rotate(-7deg);
+    animation:cardup .5s cubic-bezier(.2,1.4,.4,1);
+  }
+  @keyframes cardup{from{transform:rotate(-7deg) translateY(60px);opacity:0}to{transform:rotate(-7deg) translateY(0);opacity:1}}
+  .ovcard h2{font-family:'Anton',sans-serif;font-size:30px;text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px}
+  .ovcard h2.red{color:var(--red)}
+  .ovcard h2.gold{color:var(--gold)}
+  .ovcard p{color:var(--chalk-dim);font-size:14px;line-height:1.6;margin-bottom:20px}
+  .ovcard p b{color:var(--chalk)}
+  .ovcard .btn{width:100%;margin-top:8px}
+  .trophy{font-size:56px;margin-bottom:12px}
+
+  .toast{
+    position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(12px);
+    background:var(--chalk);color:var(--night);font-size:13px;font-weight:600;
+    padding:10px 18px;border-radius:999px;z-index:200;opacity:0;
+    transition:all .25s;pointer-events:none;white-space:nowrap;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  footer{text-align:center;color:var(--chalk-dim);font-size:11px;margin-top:34px;letter-spacing:.04em}
+
+  /* admin */
+  .admin{background:var(--turf);border:1px dashed var(--gold);border-radius:var(--radius);padding:14px;margin-bottom:20px;font-size:12px}
+  .admin h3{color:var(--gold);font-size:13px;margin-bottom:8px}
+  .admin .row{display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+  .admin select{background:var(--night);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:4px}
+  .admin button{background:var(--gold);border:none;border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer;margin-top:6px}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">World Cup 2026 · Survivor</div>
+    <h1>Perfect<span class="accent">Pick</span></h1>
+    <p class="tagline">One pick per matchday. Each nation only once. A draw or defeat ends your run.</p>
+  </header>
+
+  <div class="scoreboard">
+    <div class="panel"><div class="num gold" id="sb-streak">0</div><div class="lbl">Streak</div></div>
+    <div class="panel"><div class="num" id="sb-left">48</div><div class="lbl">Teams Left</div></div>
+    <div class="panel"><div class="num status-live" id="sb-status" style="font-size:21px;padding-top:7px">ALIVE</div><div class="lbl">Status</div></div>
+  </div>
+
+  <div class="burned">
+    <div class="lbl">Teams Burned</div>
+    <div class="flags" id="burned-flags"><span class="empty">None yet — every flag is still on the table.</span></div>
+  </div>
+
+  <div id="admin-box"></div>
+
+  <nav class="daynav" id="daynav"></nav>
+
+  <div class="dayhead">
+    <h2 id="day-title">—</h2>
+    <span class="sub" id="day-sub"></span>
+  </div>
+
+  <div id="matches"></div>
+
+  <div class="rules">
+    <h3>How it works</h3>
+    <p><b>1.</b> Every matchday, pick <b>one team</b> you think will win in 90 minutes.</p>
+    <p><b>2.</b> Win and your streak grows. <b>A draw or a defeat is a red card</b> — run over, start again.</p>
+    <p><b>3.</b> Each of the 48 nations can be used <b>once per run</b>. Burn France in the group stage and she's gone for your knockouts.</p>
+    <p><b>4.</b> Picks lock at the day's first kickoff. Results settle overnight.</p>
+  </div>
+
+  <footer>PERFECT PICK · Unofficial fan game · Not affiliated with FIFA</footer>
+</div>
+
+<div class="pickbar" id="pickbar">
+  <div class="inner">
+    <button class="btn btn-gold" id="confirm-btn" onclick="confirmPick()">Lock in pick</button>
+  </div>
+</div>
+<div class="pickbar show" id="sharebar" style="display:none">
+  <div class="inner">
+    <button class="btn btn-share" onclick="share()">Share my run</button>
+    <button class="btn btn-ghost" id="reset-btn" onclick="newRun()">New run</button>
+  </div>
+</div>
+
+<div class="overlay" id="ov-dead">
+  <div class="ovcard">
+    <div class="redcard"></div>
+    <h2 class="red">Red Card</h2>
+    <p id="dead-msg">Your run is over.</p>
+    <button class="btn btn-share" onclick="share()">Share the damage</button>
+    <button class="btn btn-red" onclick="newRun();hideOv()">Start a new run</button>
+  </div>
+</div>
+
+<div class="overlay" id="ov-win">
+  <div class="ovcard">
+    <div class="trophy">🏆</div>
+    <h2 class="gold">Still Perfect</h2>
+    <p id="win-msg"></p>
+    <button class="btn btn-share" onclick="share()">Share my streak</button>
+    <button class="btn btn-ghost" style="width:100%" onclick="hideOv()">Keep going</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= DATA ================= */
+const TEAMS = {
+  MEX:["Mexico","🇲🇽"], RSA:["South Africa","🇿🇦"], KOR:["South Korea","🇰🇷"], CZE:["Czechia","🇨🇿"],
+  CAN:["Canada","🇨🇦"], BIH:["Bosnia & Herz.","🇧🇦"], QAT:["Qatar","🇶🇦"], SUI:["Switzerland","🇨🇭"],
+  BRA:["Brazil","🇧🇷"], MAR:["Morocco","🇲🇦"], HAI:["Haiti","🇭🇹"], SCO:["Scotland","🏴󠁧󠁢󠁳󠁣󠁴󠁿"],
+  USA:["USA","🇺🇸"], PAR:["Paraguay","🇵🇾"], AUS:["Australia","🇦🇺"], TUR:["Türkiye","🇹🇷"],
+  GER:["Germany","🇩🇪"], CUW:["Curaçao","🇨🇼"], CIV:["Ivory Coast","🇨🇮"], ECU:["Ecuador","🇪🇨"],
+  NED:["Netherlands","🇳🇱"], JPN:["Japan","🇯🇵"], SWE:["Sweden","🇸🇪"], TUN:["Tunisia","🇹🇳"],
+  BEL:["Belgium","🇧🇪"], EGY:["Egypt","🇪🇬"], IRN:["Iran","🇮🇷"], NZL:["New Zealand","🇳🇿"],
+  ESP:["Spain","🇪🇸"], CPV:["Cape Verde","🇨🇻"], KSA:["Saudi Arabia","🇸🇦"], URU:["Uruguay","🇺🇾"],
+  FRA:["France","🇫🇷"], SEN:["Senegal","🇸🇳"], IRQ:["Iraq","🇮🇶"], NOR:["Norway","🇳🇴"],
+  ARG:["Argentina","🇦🇷"], ALG:["Algeria","🇩🇿"], AUT:["Austria","🇦🇹"], JOR:["Jordan","🇯🇴"],
+  POR:["Portugal","🇵🇹"], COD:["DR Congo","🇨🇩"], UZB:["Uzbekistan","🇺🇿"], COL:["Colombia","🇨🇴"],
+  ENG:["England","🏴󠁧󠁢󠁥󠁮󠁧󠁿"], CRO:["Croatia","🇭🇷"], GHA:["Ghana","🇬🇭"], PAN:["Panama","🇵🇦"]
+};
+
+/* Verified group-stage fixtures (kick-off times ET). More days added as the tournament runs. */
+const FIXTURES = [
+  {date:"2026-06-11", label:"Thu 11 June", matches:[
+    {id:"MEX-RSA", h:"MEX", a:"RSA", g:"A", t:"3pm ET"},
+    {id:"KOR-CZE", h:"KOR", a:"CZE", g:"A", t:"10pm ET"}
+  ]},
+  {date:"2026-06-12", label:"Fri 12 June", matches:[
+    {id:"CAN-BIH", h:"CAN", a:"BIH", g:"B", t:"3pm ET"},
+    {id:"USA-PAR", h:"USA", a:"PAR", g:"D", t:"9pm ET"}
+  ]},
+  {date:"2026-06-13", label:"Sat 13 June", matches:[
+    {id:"QAT-SUI", h:"QAT", a:"SUI", g:"B", t:"3pm ET"},
+    {id:"BRA-MAR", h:"BRA", a:"MAR", g:"C", t:"6pm ET"},
+    {id:"HAI-SCO", h:"HAI", a:"SCO", g:"C", t:"9pm ET"},
+    {id:"AUS-TUR", h:"AUS", a:"TUR", g:"D", t:"12am ET"}
+  ]},
+  {date:"2026-06-14", label:"Sun 14 June", matches:[
+    {id:"GER-CUW", h:"GER", a:"CUW", g:"E", t:"1pm ET"},
+    {id:"NED-JPN", h:"NED", a:"JPN", g:"F", t:"4pm ET"},
+    {id:"CIV-ECU", h:"CIV", a:"ECU", g:"E", t:"7pm ET"},
+    {id:"SWE-TUN", h:"SWE", a:"TUN", g:"F", t:"10pm ET"}
+  ]},
+  {date:"2026-06-15", label:"Mon 15 June", matches:[
+    {id:"ESP-CPV", h:"ESP", a:"CPV", g:"H", t:"12pm ET"},
+    {id:"BEL-EGY", h:"BEL", a:"EGY", g:"G", t:"3pm ET"},
+    {id:"KSA-URU", h:"KSA", a:"URU", g:"H", t:"6pm ET"},
+    {id:"IRN-NZL", h:"IRN", a:"NZL", g:"G", t:"9pm ET"}
+  ]},
+  {date:"2026-06-16", label:"Tue 16 June", matches:[
+    {id:"FRA-SEN", h:"FRA", a:"SEN", g:"I", t:"3pm ET"},
+    {id:"IRQ-NOR", h:"IRQ", a:"NOR", g:"I", t:"6pm ET"},
+    {id:"ARG-ALG", h:"ARG", a:"ALG", g:"J", t:"9pm ET"},
+    {id:"AUT-JOR", h:"AUT", a:"JOR", g:"J", t:"12am ET"}
+  ]},
+  {date:"2026-06-17", label:"Wed 17 June", matches:[
+    {id:"POR-COD", h:"POR", a:"COD", g:"K", t:"1pm ET"},
+    {id:"ENG-CRO", h:"ENG", a:"CRO", g:"L", t:"4pm ET"},
+    {id:"GHA-PAN", h:"GHA", a:"PAN", g:"L", t:"7pm ET"},
+    {id:"UZB-COL", h:"UZB", a:"COL", g:"K", t:"10pm ET"}
+  ]},
+  {date:"2026-06-18", label:"Thu 18 June", matches:[
+    {id:"CZE-RSA", h:"CZE", a:"RSA", g:"A", t:"12pm ET"},
+    {id:"SUI-BIH", h:"SUI", a:"BIH", g:"B", t:"3pm ET"},
+    {id:"CAN-QAT", h:"CAN", a:"QAT", g:"B", t:"6pm ET"},
+    {id:"MEX-KOR", h:"MEX", a:"KOR", g:"A", t:"9pm ET"}
+  ]}
+];
+
+/* Results: matchId -> winning team code, or "DRAW".
+   Update here (or via the #admin panel) after each matchday, then redeploy. */
+let RESULTS = {};
+
+/* Optional: host a results.json at this URL (e.g. a GitHub Gist raw link)
+   to update results without redeploying. Same shape as RESULTS. */
+const RESULTS_URL = "";
+
+const SITE_URL = "perfectpick.game"; // change to your real domain before launch
+
+/* ================= STORAGE ================= */
+const mem = {};
+const store = {
+  get(k){ try{ return JSON.parse(localStorage.getItem(k)) }catch(e){ return mem[k] ?? null } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)) }catch(e){ mem[k]=v } }
+};
+
+/* ================= STATE ================= */
+let S = store.get("pp-state") || { picks:{}, dead:false, deadDay:null, best:0, runs:1 };
+let selectedDay = null;   // date string being viewed
+let pendingPick = null;   // team code tapped but not locked
+
+function save(){ store.set("pp-state", S) }
+
+function todayET(){
+  return new Intl.DateTimeFormat("en-CA",{timeZone:"America/New_York"}).format(new Date());
+}
+
+function resultFor(matchId){ return RESULTS[matchId] || null }
+
+function dayHasResults(day){
+  return day.matches.some(m => resultFor(m.id));
+}
+
+/* Evaluate run: walk days in order, check each pick against results */
+function evaluate(){
+  let streak = 0; let dead = false; let deadInfo = null;
+  for(const day of FIXTURES){
+    const pick = S.picks[day.date];
+    if(!pick) continue;
+    const match = day.matches.find(m => m.h===pick || m.a===pick);
+    if(!match) continue;
+    const res = resultFor(match.id);
+    if(!res) continue;            // not settled yet
+    if(res === pick){ streak++; }
+    else { dead = true; deadInfo = {day:day.date, pick, match, res}; break; }
+  }
+  return {streak, dead, deadInfo};
+}
+
+function usedTeams(){
+  return Object.values(S.picks);
+}
+
+/* ================= RENDER ================= */
+function render(){
+  const ev = evaluate();
+  if(ev.dead && !S.dead){
+    S.dead = true; S.deadDay = ev.deadInfo.day;
+    S.best = Math.max(S.best, ev.streak);
+    save();
+    showDead(ev);
+  }
+  S.best = Math.max(S.best, ev.streak); save();
+
+  document.getElementById("sb-streak").textContent = ev.streak;
+  document.getElementById("sb-left").textContent = 48 - usedTeams().length;
+  const st = document.getElementById("sb-status");
+  if(S.dead){ st.textContent="OUT"; st.className="num red"; st.style.fontSize="21px"; }
+  else { st.textContent="ALIVE"; st.className="num status-live"; st.style.fontSize="21px"; }
+
+  // burned flags
+  const used = usedTeams();
+  const bf = document.getElementById("burned-flags");
+  bf.innerHTML = used.length
+    ? used.map(c=>`<span title="${TEAMS[c][0]}">${TEAMS[c][1]}</span>`).join("")
+    : `<span class="empty">None yet — every flag is still on the table.</span>`;
+
+  renderDayNav(ev);
+  renderDay(ev);
+  renderBars(ev);
+}
+
+function renderDayNav(ev){
+  const nav = document.getElementById("daynav");
+  const today = todayET();
+  if(!selectedDay){
+    const open = FIXTURES.find(d => d.date >= today) || FIXTURES[FIXTURES.length-1];
+    selectedDay = open.date;
+  }
+  nav.innerHTML = FIXTURES.map(d=>{
+    const pick = S.picks[d.date];
+    let dot = "";
+    if(pick){
+      const m = d.matches.find(x=>x.h===pick||x.a===pick);
+      const r = m ? resultFor(m.id) : null;
+      dot = r ? (r===pick ? `<span class="dot win"></span>` : `<span class="dot loss"></span>`)
+              : `<span class="dot pick"></span>`;
+    }
+    const done = d.date < today && !pick;
+    return `<button class="daybtn ${d.date===selectedDay?'active':''} ${done?'done':''}"
+      onclick="selectDay('${d.date}')">${d.label.replace(' June','')}${dot}</button>`;
+  }).join("");
+}
+
+function selectDay(date){ selectedDay = date; pendingPick = null; render(); }
+
+function renderDay(ev){
+  const day = FIXTURES.find(d=>d.date===selectedDay);
+  if(!day) return;
+  const today = todayET();
+  const locked = S.dead || dayHasResults(day) || day.date < today;
+  const myPick = S.picks[day.date];
+  const used = usedTeams();
+
+  document.getElementById("day-title").textContent = day.label;
+  document.getElementById("day-sub").textContent =
+    locked ? (dayHasResults(day) ? "Results in" : (S.dead ? "Run over" : "Closed"))
+           : (myPick ? "Pick locked — tap another to change" : "Pick one winner");
+
+  const box = document.getElementById("matches");
+  box.innerHTML = day.matches.map(m=>{
+    const res = resultFor(m.id);
+    return `<div class="match">
+      <div class="meta"><span>Group ${m.g}</span><span>${m.t}</span></div>
+      <div class="teams">
+        ${teamBtn(m, m.h, {locked, myPick, used, res, day})}
+        <span class="vs">VS</span>
+        ${teamBtn(m, m.a, {locked, myPick, used, res, day})}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function teamBtn(m, code, ctx){
+  const [name, flag] = TEAMS[code];
+  const isMyPick = (ctx.myPick === code) || (pendingPick === code && selectedDay && !ctx.locked);
+  const usedElsewhere = ctx.used.includes(code) && ctx.myPick !== code;
+  let cls = "team";
+  let tag = "";
+  if(ctx.res){
+    if(ctx.res === code) { cls += " won"; tag = `<span class="restag" style="color:var(--mint)">WON</span>`; }
+    else if(ctx.res === "DRAW") tag = `<span class="restag">DRAW</span>`;
+    if(ctx.myPick === code && ctx.res !== code) cls += " lostpick";
+    if(ctx.myPick === code && ctx.res === code) cls += " picked";
+  } else if(isMyPick) cls += " picked";
+  if(usedElsewhere) tag = `<span class="usedtag">BURNED</span>`;
+  const disabled = ctx.locked || usedElsewhere;
+  return `<button class="${cls}" ${disabled?"disabled":""}
+    onclick="tapTeam('${ctx.day.date}','${code}')">
+    <span class="flag">${flag}</span><span class="name">${name}</span>${tag}
+  </button>`;
+}
+
+function tapTeam(date, code){
+  if(S.dead) return;
+  pendingPick = (pendingPick === code) ? null : code;
+  render();
+}
+
+function renderBars(ev){
+  const day = FIXTURES.find(d=>d.date===selectedDay);
+  const today = todayET();
+  const canPick = day && !S.dead && !dayHasResults(day) && day.date >= today;
+  const bar = document.getElementById("pickbar");
+  const sharebar = document.getElementById("sharebar");
+  if(pendingPick && canPick){
+    bar.classList.add("show");
+    sharebar.style.display = "none";
+    const [name, flag] = TEAMS[pendingPick];
+    document.getElementById("confirm-btn").textContent = `Lock in ${flag} ${name}`;
+  } else {
+    bar.classList.remove("show");
+    sharebar.style.display = "block";
+    document.getElementById("reset-btn").style.display = S.dead ? "block" : "none";
+  }
+}
+
+function confirmPick(){
+  if(!pendingPick) return;
+  S.picks[selectedDay] = pendingPick;
+  pendingPick = null;
+  save(); render();
+  toast("Pick locked. Bonne chance. 🤞");
+}
+
+/* ================= RUN LIFECYCLE ================= */
+function showDead(ev){
+  const {pick, match, res} = ev.deadInfo;
+  const [pn, pf] = TEAMS[pick];
+  const outcome = res === "DRAW" ? "could only draw" : `lost to ${TEAMS[res][1]} ${TEAMS[res][0]}`;
+  document.getElementById("dead-msg").innerHTML =
+    `${pf} <b>${pn}</b> ${outcome}.<br>Final streak: <b>${ev.streak}</b>. Best: <b>${S.best}</b>.`;
+  document.getElementById("ov-dead").classList.add("show");
+}
+
+function newRun(){
+  S = { picks:{}, dead:false, deadDay:null, best:S.best, runs:(S.runs||1)+1 };
+  pendingPick = null; save(); render();
+  toast("New run. 48 flags back on the table.");
+}
+
+function hideOv(){
+  document.querySelectorAll(".overlay").forEach(o=>o.classList.remove("show"));
+}
+
+/* ================= SHARE ================= */
+function share(){
+  const ev = evaluate();
+  const used = usedTeams().map(c=>TEAMS[c][1]).join(" ");
+  const status = S.dead ? "🟥 OUT" : "🟢 ALIVE";
+  const lines = [
+    `⚽ PERFECT PICK — World Cup Survivor`,
+    `${status}  🔥 Streak: ${ev.streak}${S.best>ev.streak?`  🏅 Best: ${S.best}`:""}`,
+    used ? `⚰️ Burned: ${used}` : `🃏 No teams burned yet`,
+    ``,
+    `Outlast me 👉 ${SITE_URL}`
+  ];
+  const txt = lines.join("\n");
+  if(navigator.share){
+    navigator.share({text:txt}).catch(()=>copy(txt));
+  } else copy(txt);
+}
+
+function copy(txt){
+  if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(()=>toast("Copied — paste it on X 📋")); }
+  else toast("Copy failed — screenshot instead!");
+}
+
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 2200);
+}
+
+/* ================= WIN CHECK (after results load) ================= */
+function maybeCelebrate(){
+  const ev = evaluate();
+  const lastSettled = [...FIXTURES].reverse().find(d => S.picks[d.date] && dayHasResults(d));
+  if(!lastSettled || S.dead) return;
+  const seenKey = "pp-celebrated-" + lastSettled.date;
+  if(store.get(seenKey)) return;
+  const pick = S.picks[lastSettled.date];
+  const m = lastSettled.matches.find(x=>x.h===pick||x.a===pick);
+  if(m && resultFor(m.id) === pick){
+    store.set(seenKey, true);
+    document.getElementById("win-msg").innerHTML =
+      `${TEAMS[pick][1]} <b>${TEAMS[pick][0]}</b> delivered. Streak: <b>${ev.streak}</b> and counting.`;
+    document.getElementById("ov-win").classList.add("show");
+  }
+}
+
+/* ================= ADMIN (open site with #admin) ================= */
+function renderAdmin(){
+  if(location.hash !== "#admin") return;
+  const box = document.getElementById("admin-box");
+  let html = `<div class="admin"><h3>⚙️ Results admin (you only see this with #admin)</h3>`;
+  for(const day of FIXTURES){
+    for(const m of day.matches){
+      const cur = RESULTS[m.id] || "";
+      html += `<div class="row"><span style="min-width:150px">${TEAMS[m.h][1]} ${m.h} v ${m.a} ${TEAMS[m.a][1]}</span>
+        <select data-mid="${m.id}">
+          <option value="" ${cur===""?"selected":""}>—</option>
+          <option value="${m.h}" ${cur===m.h?"selected":""}>${m.h} won</option>
+          <option value="${m.a}" ${cur===m.a?"selected":""}>${m.a} won</option>
+          <option value="DRAW" ${cur==="DRAW"?"selected":""}>Draw</option>
+        </select></div>`;
+    }
+  }
+  html += `<button onclick="exportResults()">Copy RESULTS JSON</button>
+    <p style="margin-top:6px;color:var(--chalk-dim)">Paste the JSON into the RESULTS object in this file (or your results.json) and redeploy.</p></div>`;
+  box.innerHTML = html;
+  box.querySelectorAll("select").forEach(s=>{
+    s.addEventListener("change", e=>{
+      const v = e.target.value;
+      if(v) RESULTS[e.target.dataset.mid] = v; else delete RESULTS[e.target.dataset.mid];
+      render();
+    });
+  });
+}
+function exportResults(){
+  copy("let RESULTS = " + JSON.stringify(RESULTS, null, 2) + ";");
+}
+
+/* ================= BOOT ================= */
+async function boot(){
+  if(RESULTS_URL){
+    try{
+      const r = await fetch(RESULTS_URL, {cache:"no-store"});
+      if(r.ok){ RESULTS = Object.assign({}, RESULTS, await r.json()); }
+    }catch(e){ /* offline — embedded results still apply */ }
+  }
+  renderAdmin();
+  render();
+  maybeCelebrate();
+}
+boot();
+</script>
+</body>
+</html>
