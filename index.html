@@ -360,6 +360,61 @@ const RESULTS_URL = "";
 
 const SITE_URL = "playperfectpick.com";
 
+/* ===== PICK COUNTING (Supabase) =====
+   Paste your two values from Supabase here. Leave blank to disable counting. */
+const SUPABASE_URL = "https://wqhqtbtsypvtzhlewchc.supabase.co";   // e.g. https://abcdefgh.supabase.co
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxaHF0YnRzeXB2dHpobGV3Y2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExODExNTEsImV4cCI6MjA5Njc1NzE1MX0.GnimJKiRs-Dl3sT9pv1N9jbuYbhjkfqdRNtO6JKh6o0";   // the long "anon public" key
+
+
+/* ================= PICK COUNTING ================= */
+let TALLY = {};            // matchId -> {TEAM: count}
+const sb = () => SUPABASE_URL && SUPABASE_KEY;
+
+async function sendPick(matchId, team){
+  if(!sb()) return;
+  try{
+    await fetch(SUPABASE_URL + "/rest/v1/picks", {
+      method:"POST",
+      headers:{ "apikey":SUPABASE_KEY, "Authorization":"Bearer "+SUPABASE_KEY,
+                "Content-Type":"application/json", "Prefer":"return=minimal" },
+      body: JSON.stringify({ match_id: matchId, team })
+    });
+  }catch(e){}
+}
+
+async function loadTally(matchId){
+  if(!sb()) return;
+  try{
+    const r = await fetch(SUPABASE_URL + "/rest/v1/rpc/pick_tally", {
+      method:"POST",
+      headers:{ "apikey":SUPABASE_KEY, "Authorization":"Bearer "+SUPABASE_KEY,
+                "Content-Type":"application/json" },
+      body: JSON.stringify({ mid: matchId })
+    });
+    if(r.ok){ TALLY[matchId] = await r.json(); }
+  }catch(e){}
+}
+
+async function refreshTallies(){
+  if(!sb()) return;
+  const day = FIXTURES.find(d=>d.date===selectedDay);
+  if(!day) return;
+  // Only fetch once the player has locked a pick for this day (no herding before)
+  if(!S.picks[day.date]) return;
+  await Promise.all(day.matches.map(m => loadTally(m.id)));
+  render();
+}
+
+function pctFor(m, code){
+  const t = TALLY[m.id];
+  if(!t) return null;
+  const entries = Object.entries(t);
+  const total = entries.reduce((s,[,c])=>s+Number(c),0);
+  if(total < 1) return null;
+  const mine = Number(t[code]||0);
+  return Math.round(100*mine/total);
+}
+
 /* ================= STORAGE ================= */
 const mem = {};
 const store = {
@@ -477,7 +532,7 @@ function renderDayNav(ev){
   }).join("");
 }
 
-function selectDay(date){ selectedDay = date; pendingPick = null; render(); }
+function selectDay(date){ selectedDay = date; pendingPick = null; render(); refreshTallies(); }
 
 function renderDay(ev){
   const day = FIXTURES.find(d=>d.date===selectedDay);
@@ -521,9 +576,14 @@ function teamBtn(m, code, ctx){
   } else if(isMyPick) cls += " picked";
   if(usedElsewhere) tag = `<span class="usedtag">BURNED</span>`;
   const disabled = ctx.locked || usedElsewhere;
+  let pct = "";
+  if(ctx.myPick){
+    const p = pctFor(m, code);
+    if(p !== null) pct = `<span class="restag" style="color:var(--ink-soft)">${p}% picked</span>`;
+  }
   return `<button class="${cls}" ${disabled?"disabled":""}
     onclick="tapTeam('${ctx.day.date}','${code}')">
-    <span class="flag">${flag}</span><span class="name">${name}</span>${tag}
+    <span class="flag">${flag}</span><span class="name">${name}</span>${tag}${pct}
   </button>`;
 }
 
@@ -559,9 +619,17 @@ function confirmPick(){
   const day = FIXTURES.find(d=>d.date===selectedDay);
   const m = day && day.matches.find(x=>x.h===pendingPick||x.a===pendingPick);
   if(!m || matchLocked(m)){ pendingPick=null; render(); toast("Too late — that match has kicked off 🔒"); return; }
+  const day2 = FIXTURES.find(d=>d.date===selectedDay);
+  const m2 = day2 && day2.matches.find(x=>x.h===pendingPick||x.a===pendingPick);
+  const sentKey = "pp-sent-" + selectedDay;
+  if(m2 && store.get(sentKey) !== pendingPick){
+    sendPick(m2.id, pendingPick);
+    store.set(sentKey, pendingPick);
+  }
   S.picks[selectedDay] = pendingPick;
   pendingPick = null;
   save(); render();
+  refreshTallies();
   toast("Pick locked. Bonne chance. 🤞");
 }
 
@@ -674,6 +742,7 @@ async function boot(){
   renderAdmin();
   render();
   maybeCelebrate();
+  refreshTallies();
 }
 boot();
 </script>
