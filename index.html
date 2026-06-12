@@ -352,10 +352,7 @@ const FIXTURES = [
 
 /* Results: matchId -> winning team code, or "DRAW".
    Update here (or via the #admin panel) after each matchday, then redeploy. */
-let RESULTS = {
-  "MEX-RSA": "MEX",
-  "KOR-CZE": "KOR"
-};
+let RESULTS = {};
 
 /* Optional: host a results.json at this URL (e.g. a GitHub Gist raw link)
    to update results without redeploying. Same shape as RESULTS. */
@@ -656,22 +653,101 @@ function hideOv(){
   document.querySelectorAll(".overlay").forEach(o=>o.classList.remove("show"));
 }
 
-/* ================= SHARE ================= */
-function share(){
+/* ================= SHARE (image card) ================= */
+function shareText(){
   const ev = evaluate();
   const used = usedTeams().map(c=>TEAMS[c][1]).join(" ");
   const status = S.dead ? "🟥 OUT" : "🟢 ALIVE";
-  const lines = [
+  return [
     `⚽ PERFECT PICK — World Cup Survivor`,
     `${status}  🔥 Streak: ${ev.streak}${S.best>ev.streak?`  🏅 Best: ${S.best}`:""}`,
     used ? `⚰️ Burned: ${used}` : `🃏 No teams burned yet`,
     ``,
     `Outlast me 👉 ${SITE_URL}`
-  ];
-  const txt = lines.join("\n");
-  if(navigator.share){
-    navigator.share({text:txt}).catch(()=>copy(txt));
-  } else copy(txt);
+  ].join("\n");
+}
+
+function drawShareCard(){
+  const ev = evaluate();
+  const cv = document.createElement("canvas");
+  cv.width = 1080; cv.height = 1080;
+  const x = cv.getContext("2d");
+  // album paper + dots
+  x.fillStyle = "#F7F1E2"; x.fillRect(0,0,1080,1080);
+  x.fillStyle = "#E3D8BD";
+  for(let py=8; py<1080; py+=30) for(let px=8; px<1080; px+=30){ x.beginPath(); x.arc(px,py,2.4,0,7); x.fill(); }
+  // red plate
+  x.save(); x.translate(540,86); x.rotate(-0.026);
+  x.fillStyle = "#D8232A";
+  const ptxt = "WORLD CUP 2026 · SURVIVOR";
+  x.font = "700 30px Archivo, sans-serif";
+  const pw = x.measureText(ptxt).width + 56;
+  rr(x,-pw/2,-31,pw,62,10); x.fill();
+  x.fillStyle="#fff"; x.textAlign="center"; x.textBaseline="middle"; x.fillText(ptxt,0,2);
+  x.restore();
+  // wordmark
+  x.textAlign="center"; x.textBaseline="alphabetic";
+  x.font = "400 92px Anton, sans-serif";
+  x.fillStyle = "#E7CE7A"; x.fillText("PERFECT PICK", 545, 215);
+  const full = x.measureText("PERFECT PICK").width;
+  x.textAlign="left";
+  const startX = 540 - full/2;
+  x.fillStyle = "#1B2A4A"; x.fillText("PERFECT ", startX, 210);
+  const pwm = x.measureText("PERFECT ").width;
+  x.fillStyle = "#D8232A"; x.fillText("PICK", startX+pwm, 210);
+  // status sticker
+  x.save(); x.translate(540,520); x.rotate(S.dead? -0.03 : 0.0);
+  x.fillStyle = "rgba(27,42,74,.18)"; rr(x,-364,-216,740,448,26); x.fill();
+  x.fillStyle = "#FFFFFF"; x.strokeStyle="#1B2A4A"; x.lineWidth=6;
+  rr(x,-370,-224,740,448,26); x.fill(); x.stroke();
+  x.fillStyle="#E7CE7A"; x.beginPath(); x.arc(330,-184,13,0,7); x.fill();
+  x.strokeStyle="#C9A227"; x.lineWidth=3; x.stroke();
+  // streak number
+  x.textAlign="center";
+  x.font = "400 230px Anton, sans-serif";
+  x.fillStyle = S.dead ? "#D8232A" : "#C9A227";
+  x.fillText(String(ev.streak), 0, 10);
+  x.font = "700 34px Archivo, sans-serif";
+  x.fillStyle = "#6B7690";
+  x.fillText("DAY STREAK", 0, 70);
+  // status line
+  x.font = "400 64px Anton, sans-serif";
+  x.fillStyle = S.dead ? "#D8232A" : "#2E7D4F";
+  x.fillText(S.dead ? "RED CARDED" : "STILL PERFECT", 0, 165);
+  x.restore();
+  // burned flags
+  const used = usedTeams().map(c=>TEAMS[c][1]);
+  x.font = "52px sans-serif"; x.textAlign="center"; x.fillStyle="#1B2A4A";
+  x.font = "700 28px Archivo, sans-serif"; x.fillStyle="#6B7690";
+  x.fillText(used.length ? "TEAMS BURNED" : "EVERY STICKER STILL IN THE PACKET", 540, 820);
+  if(used.length){
+    x.font = "56px sans-serif";
+    x.fillText(used.slice(0,12).join(" "), 540, 890);
+  }
+  // footer
+  x.fillStyle = "#1B2A4A"; x.fillRect(0, 980, 1080, 100);
+  x.font = "400 44px Anton, sans-serif"; x.fillStyle = "#E7CE7A";
+  x.fillText("PLAYPERFECTPICK.COM", 540, 1044);
+  return cv;
+}
+function rr(x,a,b,w,h,r){ x.beginPath(); x.moveTo(a+r,b); x.arcTo(a+w,b,a+w,b+h,r); x.arcTo(a+w,b+h,a,b+h,r); x.arcTo(a,b+h,a,b,r); x.arcTo(a,b,a+w,b,r); x.closePath(); }
+
+async function share(){
+  const txt = shareText();
+  try{
+    const cv = drawShareCard();
+    const blob = await new Promise(res=>cv.toBlob(res,"image/png"));
+    const file = new File([blob], "perfect-pick-streak.png", {type:"image/png"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], text: txt});
+      return;
+    }
+    // desktop fallback: download image + copy text
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "perfect-pick-streak.png"; a.click();
+    copy(txt);
+    toast("Card downloaded + caption copied 📋");
+  }catch(e){ copy(txt); }
 }
 
 function copy(txt){
